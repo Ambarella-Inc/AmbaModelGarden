@@ -1,0 +1,5 @@
+Tested on:
+
+Cnngen tools: cv22.2.5.1.0.2005
+Cooper SDK: 1.0
+
