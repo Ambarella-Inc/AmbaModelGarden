@@ -27,7 +27,7 @@ There are 2 ways of training and preparing the model:
 
 1. Using the SageMaker console
 
-    a. Find the subscribed algorithm: SageMaker -> Training -> Algorithms -> AWS Marketplace subscriptions -> AmbaMPS for Object Detection
+    a. Find the subscribed algorithm: SageMaker -> Training -> Algorithms -> AWS Marketplace subscriptions -> YOLOv5 based Object Detection
 
 
     b. Click on the algorithm and then click on Actions followed by `Create Training Job` 
@@ -58,7 +58,7 @@ There are 2 ways of training and preparing the model:
 
 2. Using the SageMaker Python API's. 
 
-    Please refer to sample notebook of any model that demonstrates usage of API's. [Sample Notebook](https://github.com/Ambarella-Inc/amba-mps/blob/main/yolov5_ultralytics/sample.ipynb)
+    Please refer to sample notebook of any model that demonstrates usage of API's. [Sample Notebook](https://github.com/Ambarella-Inc/AmbaModelGarden/blob/8192442208781c0069238ff4b362ffcf54b3479a/object_detection/yolov5/sample.ipynb)
 
 
 ## Cloud Evaluation
