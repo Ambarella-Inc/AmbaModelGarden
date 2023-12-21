@@ -4,7 +4,7 @@
 
 Ambarella’s Model Garden is a collection of models tuned for Ambarella's chipsets for ease of deployment. Users can select the domain and choose from one of the offered models based on their real world application. 
 
-Every model undergoes transfer learning to adapt to user's dataset and then is further optimized using Ambarella's proprietary model compression toolkit to enhance the performance on Amberalla’s devices. Users are provided with optimization knobs that influence the trained model's accuracy and performance. Finally, the CVflow SDK compiles the trained model, generating an artifacts tar file containing compiled binaries that can be used to run on the device without any extra code. 
+Every model undergoes transfer learning to adapt to user's dataset and then is further optimized using Ambarella's proprietary model compression toolkit to enhance the performance on Ambarella's devices. Users are provided with optimization knobs that influence the trained model's accuracy and performance. Finally, the CVflow SDK compiles the trained model, generating an artifacts tar file containing compiled binaries that can be used to run on the device without any extra code. 
 
 ![alt text](docs/ambamodelgarden.jpg)
 
@@ -58,13 +58,12 @@ There are 2 ways of training and preparing the model:
 
 2. Using the SageMaker Python API's. 
 
-    Please refer to sample notebook which demonstrates usage of API's. [Sample Notebook](https://github.com/Ambarella-Inc/amba-mps/blob/main/yolov5_ultralytics/sample.ipynb)
+    Please refer to sample notebook of any model that demonstrates usage of API's. [Sample Notebook](https://github.com/Ambarella-Inc/amba-mps/blob/main/yolov5_ultralytics/sample.ipynb)
 
 
 ## Cloud Evaluation
 
-The AmbaMPS algorithm also provides support to running inference on the cloud using SageMaker services. Once the model training has been completed, users can create EndPoints under SageMaker -> Inference -> Endpoints. More information can be found here [Deploying Models for Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html)
+Each Marketplace product also provides support to running inference on the cloud using SageMaker services. Once the model training has been completed, users can create EndPoints under SageMaker -> Inference -> Endpoints. More information can be found here [Deploying Models for Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html)
 
 Cloud evaluation can also be done using SageMaker's Python API's. Please refer to the same notebook which demonstrates the usage of the API's. 
-
 
