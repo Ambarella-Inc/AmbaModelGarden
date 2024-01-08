@@ -1,4 +1,4 @@
-# Ambarella's Model Garden  
+# Ambarella Model Garden - YOLO based Object Detection
 
 ## Introduction
 
@@ -8,16 +8,19 @@ Every model undergoes transfer learning to adapt to user's dataset and then is f
 
 ![alt text](docs/ambamodelgarden.jpg)
 
-## Supported Models 
+This repo consists of an object detection use case using YOLOv5
 
-### Object Detection
+## Usage
 
-| Model | Product Link |
-| --- | --- |
-| YOLOv5 | [YOLOv5](https://aws.amazon.com/marketplace/pp/prodview-zf6dvvlikubbu) |
-| EfficientDet | *In Progress* |
+### AWS
 
-## Training
+The YOLOv5 model is hosted on AWS using SageMaker product. SageMaker Algorithm allows for training and inference on the cloud. The optimized YOLOv5 docker image is hosted on AWS ECR which is used internally by the SageMaker training and inference. Here is the link to the SageMaker Algorithm on the AWS Marketplace: [YOLOv5](https://aws.amazon.com/marketplace/pp/prodview-zf6dvvlikubbu)
+
+#### Prerequisites
+
+Users must have access to AWS products like SageMaker, S3 with appropriate IAM role. 
+
+#### Training
 
 AWS SageMaker is the driver for training the algorithm. Users can subscribe to the latest version of the algorithm from the Marketplace page. The subscribed algorithm will show up in the SageMaker Console. 
 
@@ -61,9 +64,18 @@ There are 2 ways of training and preparing the model:
     Please refer to sample notebook of any model that demonstrates usage of API's. [Sample Notebook](https://github.com/Ambarella-Inc/AmbaModelGarden/blob/8192442208781c0069238ff4b362ffcf54b3479a/object_detection/yolov5/sample.ipynb)
 
 
-## Cloud Evaluation
+#### Cloud Evaluation
 
 Each Marketplace product also provides support to running inference on the cloud using SageMaker services. Once the model training has been completed, users can create EndPoints under SageMaker -> Inference -> Endpoints. More information can be found here [Deploying Models for Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html)
 
 Cloud evaluation can also be done using SageMaker's Python API's. Please refer to the same notebook which demonstrates the usage of the API's. 
 
+
+### Container
+
+With license agreement with Ambarella, users can get access to the same container publised to AWS ECR and can either modify the existing model or add a custom model using the APIs provided. 
+
+
+## On Device 
+
+The tests/ folder provides guidelines on how to use the output training artifacts and run the end application on the device. 
