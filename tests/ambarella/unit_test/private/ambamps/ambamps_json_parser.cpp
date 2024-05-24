@@ -477,14 +477,15 @@ int parse_node_io(priv_node_t *p_node, priv_body_t *p_body,
 	return rval;
 }
 
-int node_coproc_type_string2num(coproc_type_t &coproc_type, const char *node_coprocessor)
+int node_coproc_type_string2num(ambamps_coproc_type_t &coproc_type,
+	const char *node_coprocessor)
 {
 	int rval = 0;
 
 	if (is_cstring_match(node_coprocessor, "vp")) {
-		coproc_type = COPROC_VP;
+		coproc_type = AMBAMPS_COPROC_VP;
 	} else if (is_cstring_match(node_coprocessor, "arm")) {
-		coproc_type = COPROC_ARM;
+		coproc_type = AMBAMPS_COPROC_ARM;
 	} else {
 		ambamps_error("unknown coprocessor type %s.\n", node_coprocessor);
 		rval = -1;
@@ -616,7 +617,7 @@ int parse_graph_nodes(priv_body_t *p_body, priv_node_vec *p_node_list, struct js
 				rval = -1;
 				break;
 			}
-			if (node.coproc_type == COPROC_VP) {
+			if (node.coproc_type == AMBAMPS_COPROC_VP) {
 				/* attributes->vas_output */
 				if (!json_object_object_get_ex(attr_obj, "vas_output", &vas_obj)) {
 					ambamps_error("null vas output object. error code: %s\n", json_util_get_last_err());
@@ -625,8 +626,8 @@ int parse_graph_nodes(priv_body_t *p_body, priv_node_vec *p_node_list, struct js
 				}
 				std::string vas_output_dir = std::string(json_object_get_string(vas_obj));
 				std::string node_dir = vas_output_dir.substr(0, vas_output_dir.rfind("vas_output"));
-				node.compiled_bin = node_dir + node.name + ".bin";
-			} else if (node.coproc_type == COPROC_ARM) {
+				node.compiled_bin = node.name + ".bin";
+			} else if (node.coproc_type == AMBAMPS_COPROC_ARM) {
 				/* attributes->primitive-graph */
 				if (!json_object_object_get_ex(attr_obj, "primitive-graph", &prim_ext)) {
 					ambamps_error("null primitive graph object. error code: %s\n", json_util_get_last_err());

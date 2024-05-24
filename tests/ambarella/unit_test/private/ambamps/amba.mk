@@ -22,7 +22,7 @@
 #DEPS(amba.mk) cv-ambamps-test(jobserver %): &&?board &&??ambcavalry-header &&??ambvideo-header \
 		&&??libnnctrl &&??libcavalrymem &&??libvproc &&??libeazyai \
 		&&??prebuild-opencv &&??prebuild-json-c \
-		AMBA_SOC!=s6lm AMBA_CAVALRY_ARCH=cavalry_v2 unselect
+		AMBA_SOC!=s6lm unselect
 
 PACKAGE_NAME = cv-ambamps-test
 PACKAGE_DEPS = generic-header ambcavalry-header ambvideo-header board
@@ -43,6 +43,8 @@ include $(ENV_MAKE_DIR)/inc.app.mk
 
 ################ Package ambamps ################
 
+ifeq ($(AMBA_CAVALRY_ARCH),cavalry_v2)
+
 test_ambamps-ldflags = $(patsubst %,-l%,nnctrl cavalry_mem json-c opencv_core opencv_imgproc opencv_imgcodecs)
 test_ambamps-ldflags += -lpthread -lm -ldl \
 		-Wl,-rpath-link=$(PREBUILD_OSS_DIR)/opencv/usr/lib \
@@ -59,6 +61,8 @@ test_ambamps-srcs = test_ambamps.cpp \
 $(call set_flags,CFLAGS,$(test_ambamps-srcs),-Iambacnn)
 $(eval $(call add-bin-build,test_ambamps,$(test_ambamps-srcs),$(test_ambamps-ldflags)))
 
+endif
+
 #####
 
 test_ambamps_live-ldflags = $(patsubst %,-l%,nnctrl cavalry_mem json-c eazyai opencv_core opencv_imgproc opencv_imgcodecs)
@@ -70,11 +74,19 @@ test_ambamps_live-ldflags += -lpthread -lm -ldl \
 		-Wl,-rpath-link=$(PREBUILD_OSS_DIR)/tbb/usr/lib \
 		-Wl,-rpath-link=$(FAKEROOT_DIR)/usr/lib
 
+test_ambamps_live-cflags := -Iambacnn
+
+ifeq ($(AMBA_CAVALRY_ARCH),cavalry_v2)
+test_ambamps_live-cflags += -D AMBAMPS_CAVALRY_V2=1
+else ifeq ($(AMBA_CAVALRY_ARCH),cavalry_v3)
+test_ambamps_live-cflags += -D AMBAMPS_CAVALRY_V3=1
+endif
+
 test_ambamps_live-srcs = test_ambamps_live.cpp \
 		ambamps_graph_ctrl.cpp \
 		ambamps_json_parser.cpp
 
-$(call set_flags,CFLAGS,$(test_ambamps_live-srcs),-Iambacnn)
+$(call set_flags,CFLAGS,$(test_ambamps_live-srcs),$(test_ambamps_live-cflags))
 $(eval $(call add-bin-build,test_ambamps_live,$(test_ambamps_live-srcs),$(test_ambamps_live-ldflags)))
 
 all: $(BIN_TARGETS)

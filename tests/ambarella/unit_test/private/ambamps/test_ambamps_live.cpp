@@ -2,7 +2,8 @@
  * test_ambamps_live.cpp
  *
  * History:
- *    2022/9/19 - [Monica Yang] created
+ *    2022/09/19 - [Monica Yang] created
+ *    2023/12/08 - [Monica Yang] modified to support CV3x
  *
  * Copyright [2022] Ambarella International LP.
  *
@@ -22,6 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
@@ -127,26 +129,7 @@ const static ea_osd_color_rgba_t colors_table[COLOR_NUM] = {
 
 static int live_mode_flag = 1;
 
-static int ambamps_alloc_cv_mem(uint32_t *psize, uint32_t *pphys, uint8_t **pvirt, uint8_t cache_en)
-{
-	void *virt = nullptr;
-	unsigned long phys = 0, size = 0;
-	int rval = 0;
-
-	size = *psize;
-	if (cavalry_mem_alloc(&size, &phys, &virt, cache_en) < 0) {
-		ambamps_error("cavalry_mem_alloc\n");
-		rval = -1;
-	} else {
-		*psize = size;
-		*pphys = phys;
-		*pvirt = (uint8_t *)virt;
-		memset(virt, 0, size);
-	}
-
-	return rval;
-}
-
+#if defined(AMBAMPS_CAVALRY_V2)
 static int ambamps_graph_io_cfg(graph_ctx_t *pctx)
 {
 	int rval = 0;
@@ -187,40 +170,101 @@ static int ambamps_graph_io_cfg(graph_ctx_t *pctx)
 		}
 	}
 
-	/*for (uint32_t i = 0; i < pctx->in_num; ++i) {
-		ambamps_log("graph input: %u [%s] dim: (%u, %u, %u, %u), pitch: %u, "
+#if AMBAMPS_DEBUG
+	for (uint32_t i = 0; i < pctx->in_num; ++i) {
+		ambamps_log("graph input: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
 			"data_fmt: (%d, %d, %d, %d), "
-			"size: %u, virt_addr 0x%p\n",
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
 			i, pctx->in_pair[i].port_name,
 			pctx->in_pair[i].dim.plane, pctx->in_pair[i].dim.depth,
 			pctx->in_pair[i].dim.height, pctx->in_pair[i].dim.width,
 			pctx->in_pair[i].dim.pitch,
 			pctx->in_pair[i].data_fmt.sign, pctx->in_pair[i].data_fmt.size,
 			pctx->in_pair[i].data_fmt.expoffset, pctx->in_pair[i].data_fmt.expbits,
-			pctx->in_pair[i].size, pctx->in_pair[i].virt_addr);
+			pctx->in_pair[i].size, pctx->in_pair[i].virt_addr, pctx->in_pair[i].dram_addr);
 	}
 	for (uint32_t i = 0; i < pctx->out_num; ++i) {
-		ambamps_log("graph output: %u [%s] dim: (%u, %u, %u, %u), pitch: %u, "
+		ambamps_log("graph output: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
 			"data_fmt: (%d, %d, %d, %d), "
-			"size: %u, virt_addr 0x%p\n",
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
 			i, pctx->out_pair[i].port_name,
 			pctx->out_pair[i].dim.plane, pctx->out_pair[i].dim.depth,
 			pctx->out_pair[i].dim.height, pctx->out_pair[i].dim.width,
 			pctx->out_pair[i].dim.pitch,
 			pctx->out_pair[i].data_fmt.sign, pctx->out_pair[i].data_fmt.size,
 			pctx->out_pair[i].data_fmt.expoffset, pctx->out_pair[i].data_fmt.expbits,
-			pctx->out_pair[i].size, pctx->out_pair[i].virt_addr);
-	}*/
+			pctx->out_pair[i].size, pctx->out_pair[i].virt_addr, pctx->out_pair[i].dram_addr);
+	}
+#endif
 
 	return rval;
 }
+#elif defined(AMBAMPS_CAVALRY_V3)
+static int ambamps_graph_io_cfg(graph_ctx_t *pctx)
+{
+	int rval = 0;
+	node_match_t *node = nullptr;
+
+	/* for CV3x there is only one node */
+
+	node = &pctx->node_list[0];
+	pctx->in_num = node->in_num;
+	for (uint32_t k = 0; k < node->in_num; ++k) {
+		strncpy(pctx->in_pair[k].port_name, node->in_pair[k].port_name, AMBAMPS_IO_NAME_MAX - 1);
+		pctx->in_pair[k].virt_addr = node->in_pair[k].virt_addr;
+		pctx->in_pair[k].dram_addr = node->in_pair[k].dram_addr;
+		pctx->in_pair[k].size = node->in_pair[k].size;
+		pctx->in_pair[k].dim = node->in_pair[k].dim;
+		pctx->in_pair[k].data_fmt = node->in_pair[k].data_fmt;
+	}
+
+	pctx->out_num = node->out_num;
+	for (uint32_t k = 0; k < node->out_num; ++k) {
+		strncpy(pctx->out_pair[k].port_name, node->out_pair[k].port_name, AMBAMPS_IO_NAME_MAX - 1);
+		pctx->out_pair[k].virt_addr = node->out_pair[k].virt_addr;
+		pctx->out_pair[k].dram_addr = node->out_pair[k].dram_addr;
+		pctx->out_pair[k].size = node->out_pair[k].size;
+		pctx->out_pair[k].dim = node->out_pair[k].dim;
+		pctx->out_pair[k].data_fmt = node->out_pair[k].data_fmt;
+	}
+
+#if AMBAMPS_DEBUG
+	for (uint32_t i = 0; i < pctx->in_num; ++i) {
+		ambamps_log("graph input: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
+			"data_fmt: (%d, %d, %d, %d), "
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
+			i, pctx->in_pair[i].port_name,
+			pctx->in_pair[i].dim.plane, pctx->in_pair[i].dim.depth,
+			pctx->in_pair[i].dim.height, pctx->in_pair[i].dim.width,
+			pctx->in_pair[i].dim.pitch,
+			pctx->in_pair[i].data_fmt.sign, pctx->in_pair[i].data_fmt.size,
+			pctx->in_pair[i].data_fmt.expoffset, pctx->in_pair[i].data_fmt.expbits,
+			pctx->in_pair[i].size, pctx->in_pair[i].virt_addr, pctx->in_pair[i].dram_addr);
+	}
+	for (uint32_t i = 0; i < pctx->out_num; ++i) {
+		ambamps_log("graph output: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
+			"data_fmt: (%d, %d, %d, %d), "
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
+			i, pctx->out_pair[i].port_name,
+			pctx->out_pair[i].dim.plane, pctx->out_pair[i].dim.depth,
+			pctx->out_pair[i].dim.height, pctx->out_pair[i].dim.width,
+			pctx->out_pair[i].dim.pitch,
+			pctx->out_pair[i].data_fmt.sign, pctx->out_pair[i].data_fmt.size,
+			pctx->out_pair[i].data_fmt.expoffset, pctx->out_pair[i].data_fmt.expbits,
+			pctx->out_pair[i].size, pctx->out_pair[i].virt_addr, pctx->out_pair[i].dram_addr);
+	}
+#endif
+
+	return rval;
+}
+#endif
 
 static int ambamps_chain_next_nodes(graph_ctx_t *pctx, node_match_t *pnet)
 {
 	int rval = 0;
 	node_match_t *node_list = pctx->node_list;
 	int jnt_num = pctx->node_jnt_num;
-	graph_node_joint_t *jnt_list = pctx->node_joint;
+	ambamps_graph_node_joint_t *jnt_list = pctx->node_joint;
 	node_match_t *to_nd = nullptr;
 	int to_nd_id = -1;
 	int *exec_idx = pctx->exec_index;
@@ -281,8 +325,13 @@ static int ambamps_chain_next_nodes(graph_ctx_t *pctx, node_match_t *pnet)
 		from_port_size = from_dim->plane * from_dim->depth * from_dim->height * from_dim->width;
 		to_port_size = to_dim->plane * to_dim->depth * to_dim->height * to_dim->width;
 		if (from_port_size!= to_port_size) {
+#if defined(AMBAMPS_CAVALRY_V2)
 			ambamps_error("node %s and node %s has different io size. io %s dim %u,%u,%u,%u "
-				"io %s dim dim %u,%u,%u,%u\n",pnet->name, to_nd->name,
+				"io %s dim %u,%u,%u,%u\n",pnet->name, to_nd->name,
+#elif defined(AMBAMPS_CAVALRY_V3)
+			ambamps_error("node %s and node %s has different io size. io %s dim %lu,%lu,%lu,%lu "
+				"io %s dim %lu,%lu,%lu,%lu\n",pnet->name, to_nd->name,
+#endif
 				pnet->out_pair[from_port_idx].port_name,
 				pnet->out_pair[from_port_idx].dim.plane, pnet->out_pair[from_port_idx].dim.depth,
 				pnet->out_pair[from_port_idx].dim.height, pnet->out_pair[from_port_idx].dim.width,
@@ -316,9 +365,9 @@ static int ambamps_net_io_cfg(node_match_t *pnet, struct net_input_cfg *net_in,
 		pnet->in_pair[i].data_fmt = net_in->in_desc[i].data_fmt;
 
 #if AMBAMPS_DEBUG
-		ambamps_log("node [ %s ] input: %u [%s] dim: (%u, %u, %u, %u), pitch: %u, "
+		ambamps_log("node [ %s ] input: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
 			"data_fmt: (%d, %d, %d, %d), "
-			"size: %u, virt_addr 0x%p\n",
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
 			pnet->name,
 			i, net_in->in_desc[i].name,
 			net_in->in_desc[i].dim.plane, net_in->in_desc[i].dim.depth,
@@ -326,7 +375,7 @@ static int ambamps_net_io_cfg(node_match_t *pnet, struct net_input_cfg *net_in,
 			net_in->in_desc[i].dim.pitch,
 			net_in->in_desc[i].data_fmt.sign, net_in->in_desc[i].data_fmt.size,
 			net_in->in_desc[i].data_fmt.expoffset, net_in->in_desc[i].data_fmt.expbits,
-			net_in->in_desc[i].size, net_in->in_desc[i].virt);
+			net_in->in_desc[i].size, net_in->in_desc[i].virt, net_in->in_desc[i].addr);
 #endif
 	}
 
@@ -337,7 +386,11 @@ static int ambamps_net_io_cfg(node_match_t *pnet, struct net_input_cfg *net_in,
 		pnet->out_pair[i].dram_addr = net_out->out_desc[i].addr;
 		pnet->out_pair[i].size = net_out->out_desc[i].size;
 		if ((net_out->out_desc[i].addr == 0) || (net_out->out_desc[i].size == 0)) {
+#if defined(AMBAMPS_CAVALRY_V2)
 			ambamps_error("Output [%u] [%s] get invalid addr: 0x%x, size: 0x%x\n",
+#elif defined(AMBAMPS_CAVALRY_V3)
+			ambamps_error("Output [%u] [%s] get invalid addr: 0x%lx, size: 0x%lx\n",
+#endif
 				i, net_out->out_desc[i].name,
 				net_out->out_desc[i].addr, net_out->out_desc[i].size);
 			rval = -1;
@@ -347,9 +400,15 @@ static int ambamps_net_io_cfg(node_match_t *pnet, struct net_input_cfg *net_in,
 		pnet->out_pair[i].data_fmt = net_out->out_desc[i].data_fmt;
 
 #if AMBAMPS_DEBUG
+#if defined(AMBAMPS_CAVALRY_V2)
 		ambamps_log("node [ %s ] output: %u [%s] dim: (%u, %u, %u, %u), pitch: %u, "
 			"data_fmt: (%d, %d, %d, %d), "
-			"size: %u, virt_addr 0x%p\n",
+			"size: %u, virt_addr %p dram_addr 0x%x\n",
+#elif defined(AMBAMPS_CAVALRY_V3)
+		ambamps_log("node [ %s ] output: %u [%s] dim: (%lu, %lu, %lu, %lu), pitch: %lu, "
+			"data_fmt: (%d, %d, %d, %d), "
+			"size: %lu, virt_addr %p dram_addr 0x%lx\n",
+#endif
 			pnet->name,
 			i, net_out->out_desc[i].name,
 			net_out->out_desc[i].dim.plane, net_out->out_desc[i].dim.depth,
@@ -357,7 +416,7 @@ static int ambamps_net_io_cfg(node_match_t *pnet, struct net_input_cfg *net_in,
 			net_out->out_desc[i].dim.pitch,
 			net_out->out_desc[i].data_fmt.sign, net_out->out_desc[i].data_fmt.size,
 			net_out->out_desc[i].data_fmt.expoffset, net_out->out_desc[i].data_fmt.expbits,
-			net_out->out_desc[i].size, net_out->out_desc[i].virt);
+			net_out->out_desc[i].size, net_out->out_desc[i].virt, net_out->out_desc[i].addr);
 #endif
 	}
 
@@ -396,9 +455,22 @@ static int ambamps_init_one_vp_node(node_match_t *pnet, graph_ctx_t *pctx)
 		}
 		vp_nd->net_id = net_id;
 		vp_nd->net_m.mem_size = net_cf.net_mem_total;
-		if (ambamps_alloc_cv_mem(&vp_nd->net_m.mem_size, &vp_nd->net_m.phy_addr,
-			&vp_nd->net_m.virt_addr, vp_nd->cache_en) < 0) {
-			ambamps_error("ambamps_alloc_cv_mem\n");
+
+#if defined(AMBAMPS_CAVALRY_V2)
+		unsigned long mem_size_cv2x = vp_nd->net_m.mem_size;
+		unsigned long phy_addr_cv2x = vp_nd->net_m.phy_addr;
+
+		rval = cavalry_mem_alloc(&mem_size_cv2x, &phy_addr_cv2x,
+			(void**)&vp_nd->net_m.virt_addr, vp_nd->cache_en);
+
+		vp_nd->net_m.mem_size = (uint32_t)mem_size_cv2x;
+		vp_nd->net_m.phy_addr = (uint32_t)phy_addr_cv2x;
+#elif defined(AMBAMPS_CAVALRY_V3)
+		rval = cavalry_mem_alloc(&vp_nd->net_m.mem_size, &vp_nd->net_m.phy_addr,
+			(void**)&vp_nd->net_m.virt_addr, vp_nd->cache_en);
+#endif
+		if (rval < 0) {
+			ambamps_error("failed to alloc mem for node %s\n", pnet->name);
 			rval = -1;
 			break;
 		}
@@ -427,7 +499,7 @@ static int ambamps_init_one_vp_node(node_match_t *pnet, graph_ctx_t *pctx)
 				break;
 			}
 		}
-		/* fill vp pnet prot name */
+		/* fill vp pnet port name */
 		if (ambamps_net_io_cfg(pnet, &net_in, &net_out) < 0) {
 			ambamps_error("ambamps_net_io_cfg\n");
 			rval = -1;
@@ -559,12 +631,14 @@ static int ambamps_init_one_arm_node(node_match_t *pnet, graph_ctx_t *pctx)
 			pnet->out_pair[i].dim.pitch = pitch;
 			pnet->out_pair[i].size = p * d * h * pitch;
 
-			if (ambamps_alloc_cv_mem(&pnet->out_pair[i].size, &pnet->out_pair[i].dram_addr,
-				&pnet->out_pair[i].virt_addr, 0) < 0) {
+			pnet->out_pair[i].virt_addr = (uint8_t*)malloc(pnet->out_pair[i].size);
+			if (pnet->out_pair[i].virt_addr == nullptr) {
 				ambamps_error("failed to alloc mem for arm node %s\n", pnet->name);
 				rval = -1;
 				break;
 			}
+			memset(pnet->out_pair[i].virt_addr, 0, pnet->out_pair[i].size);
+			pnet->out_pair[i].dram_addr = 0;
 		}
 
 #if AMBAMPS_DEBUG
@@ -660,14 +734,22 @@ static int ambamps_process_output(graph_ctx_t *pctx, init_live_cfg_t *pcfg)
 	uint32_t bbox_num = 0, pitch = 0;
 	const float conf_th = pcfg->conf_th;
 	float conf = 0.0f;
+	const char *input_name_y = "images_y";
 	const char *output_name = "output";
 
 	int osd_color = 0;
 	char text[128] = "";
 
-	int net_w = pctx->in_pair[0].dim.width;
-	int net_h = pctx->in_pair[0].dim.height;
+	int net_w = 0;
+	int net_h = 0;
 	cv::Mat img;
+
+	for (uint32_t i = 0; i < pctx->in_num; ++i) {
+		if (is_cstring_match(pctx->in_pair[i].port_name, input_name_y)) {
+			net_w = pctx->in_pair[i].dim.width;
+			net_h = pctx->in_pair[i].dim.height;
+		}
+	}
 
 	get_overlay_screen(pcfg, img);
 
@@ -752,7 +834,7 @@ void usage(void)
 			printf(" [%s]", hint[i].arg);
 		printf("\t%s\n", hint[i].str);
 	}
-	printf("Example: test_ambamps_live --in-folder ./output/ -t 0 -i 1 -s 0 -h 0.25\n");
+	printf("Example: test_ambamps_live -b ./output/ -t 0 -i 1 -s 0 -h 0.25\n");
 }
 
 static int init_param(int argc, char **argv, init_live_cfg_t *pcfg)
@@ -1029,6 +1111,8 @@ int ambamps_execute_net(graph_ctx_t *pctx, init_live_cfg_t *pcfg)
 	struct net_input_cfg net_input;
 	ambamps_iav_t *p_iav = &pcfg->iav;
 	node_match_t *node=nullptr;
+	const char *input_name_y = "images_y";
+	const char *input_name_uv = "images_uv";
 	int in_num = 0;
 
 	memset((void *)&net_input, 0, sizeof(struct net_input_cfg));
@@ -1047,11 +1131,16 @@ int ambamps_execute_net(graph_ctx_t *pctx, init_live_cfg_t *pcfg)
 
 		for (i = 0; i < in_num; ++i) {
 			net_input.in_desc[i].name = node->in_pair[i].port_name;
-			net_input.in_desc[i].addr = (i == 0)? (p_iav->data_cap.y_addr_offset + p_iav->dsp_phy_addr) : \
-				(p_iav->data_cap.uv_addr_offset + p_iav->dsp_phy_addr);
+			if (is_cstring_match(node->in_pair[i].port_name, input_name_y)) {
+				net_input.in_desc[i].addr = p_iav->data_cap.y_addr_offset + p_iav->dsp_phy_addr;
+			} else if (is_cstring_match(node->in_pair[i].port_name, input_name_uv)) {
+				net_input.in_desc[i].addr = p_iav->data_cap.uv_addr_offset + p_iav->dsp_phy_addr;
+			} else {
+				ambamps_error("unknown input port name %s\n", node->in_pair[i].port_name);
+			}
 			net_input.in_desc[i].update_pitch = p_iav->data_cap.pitch;
 #if AMBAMPS_DEBUG
-			ambamps_log("node %s io %s phys addr: 0x%x width: %d height: %d pitch: %d\n", node->name,
+			ambamps_log("node %s io %s phys addr: 0x%lx width: %d height: %d pitch: %ld\n", node->name,
 				net_input.in_desc[i].name, net_input.in_desc[i].addr,
 				p_iav->data_cap.width, p_iav->data_cap.height, net_input.in_desc[i].update_pitch);
 #endif
@@ -1059,13 +1148,13 @@ int ambamps_execute_net(graph_ctx_t *pctx, init_live_cfg_t *pcfg)
 
 		for (i = 0; i < pctx->node_num; ++i) {
 			node = &pctx->node_list[i];
-			if (node->node_type == COPROC_VP) {
+			if (node->node_type == AMBAMPS_COPROC_VP) {
 				if (ambamps_run_one_vp_node(node, &net_input) < 0) {
 					ambamps_error("failed to run vp node %s\n", node->name);
 					rval = -1;
 					break;
 				}
-			} else if (node->node_type == COPROC_ARM) {
+			} else if (node->node_type == AMBAMPS_COPROC_ARM) {
 				if (ambamps_run_one_arm_node(node) < 0) {
 					ambamps_error("failed to run arm node %s\n", node->name);
 					rval = -1;
@@ -1125,6 +1214,11 @@ int main(int argc, char *argv[])
 			rval = -1;
 			break;
 		}
+		if ((fd_cav = open(CAVALRY_DEV_NODE, O_RDWR, 0)) < 0) {
+			perror(CAVALRY_DEV_NODE);
+			rval = -1;
+			break;
+		}
 		ambamps_log("version: %s\n", get_ambamps_version().c_str());
 		if (ambamps_init_iav(&init_cfg.iav) < 0) {
 			printf("Error: ambamps_init_iav.\n");
@@ -1146,16 +1240,12 @@ int main(int argc, char *argv[])
 		}
 
 		/* first graph node must be vp */
-		if (graph_ctx.node_list[0].node_type != COPROC_VP) {
+		if (graph_ctx.node_list[0].node_type != AMBAMPS_COPROC_VP) {
 			ambamps_error("the first graph node should be VP node\n");
 			rval = -1;
 			break;
 		}
-		if ((fd_cav = open(CAVALRY_DEV_NODE, O_RDWR, 0)) < 0) {
-			perror(CAVALRY_DEV_NODE);
-			rval = -1;
-			break;
-		}
+
 		if (nnctrl_init(fd_cav, 0) < 0) {
 			ambamps_error("nnctrl_init err\n");
 			rval = -1;
@@ -1169,13 +1259,13 @@ int main(int argc, char *argv[])
 
 		for (i = 0; i < graph_ctx.node_num; ++i) {
 			node = &graph_ctx.node_list[i];
-			if (node->node_type == COPROC_VP) {
+			if (node->node_type == AMBAMPS_COPROC_VP) {
 				if (ambamps_init_one_vp_node(node, &graph_ctx) < 0) {
 					ambamps_error("failed to init vp node %s\n", node->name);
 					rval = -1;
 					break;
 				}
-			} else if (node->node_type == COPROC_ARM) {
+			} else if (node->node_type == AMBAMPS_COPROC_ARM) {
 				if (ambamps_init_one_arm_node(node, &graph_ctx) < 0) {
 					ambamps_error("failed to init one arm node %s\n", node->name);
 					rval = -1;
@@ -1200,19 +1290,18 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < graph_ctx.node_num; ++i) {
 		node = &graph_ctx.node_list[i];
-		if (node->node_type == COPROC_VP) {
+		if (node->node_type == AMBAMPS_COPROC_VP) {
 			nnctrl_exit_net(node->node.vp_node.net_id);
 			p_cv_mem = &node->node.vp_node.net_m;
 			if (p_cv_mem->virt_addr && p_cv_mem->mem_size) {
 				cavalry_mem_free(p_cv_mem->mem_size,
 						p_cv_mem->phy_addr, p_cv_mem->virt_addr);
 			}
-		} else if (node->node_type == COPROC_ARM) {
+		} else if (node->node_type == AMBAMPS_COPROC_ARM) {
 			ambamps_release_one_arm_node(node);
 			for (j = 0; j < (int)node->out_num; ++j) {
-				if (node->out_pair[j].virt_addr && node->out_pair[j].size) {
-					cavalry_mem_free(node->out_pair[j].size,
-						node->out_pair[j].dram_addr, node->out_pair[j].virt_addr);
+				if (node->out_pair[j].virt_addr) {
+					free(node->out_pair[j].virt_addr);
 				}
 			}
 		}

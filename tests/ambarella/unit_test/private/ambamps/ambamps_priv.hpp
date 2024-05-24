@@ -92,9 +92,9 @@ typedef enum {
 } io_type_t;
 
 typedef enum {
-	COPROC_VP = 0,
-	COPROC_ARM = 1,
-} coproc_type_t;
+	AMBAMPS_COPROC_VP = 0,
+	AMBAMPS_COPROC_ARM = 1,
+} ambamps_coproc_type_t;
 
 
 /* ----- json parser ----- */
@@ -105,14 +105,14 @@ typedef struct priv_ext_lib_s {
 	std::string lib_prim_file;
 } priv_ext_lib_t;
 
-typedef struct graph_node_joint_s {
+typedef struct ambamps_graph_node_joint_s {
 	uint32_t from_node_id;
 	char from_port_name[CAVALRY_IO_NAME_MAX];
 	uint32_t to_node_id;
 	char to_port_name[CAVALRY_IO_NAME_MAX];
-} graph_node_joint_t;
+} ambamps_graph_node_joint_t;
 
-typedef std::vector<graph_node_joint_t> node_jnt_vec;
+typedef std::vector<ambamps_graph_node_joint_t> node_jnt_vec;
 
 typedef std::vector<struct lh_entry*> lh_entry_vec;
 
@@ -148,7 +148,7 @@ struct priv_node_s {
 	str_vec oports;						// "oport-ids"
 	priv_node_vec nodes_map;
 
-	coproc_type_t coproc_type;
+	ambamps_coproc_type_t coproc_type;
 	std::string compiled_bin;
 
 	priv_ext_lib_t ext_lib;					// only one lib in one node
@@ -169,8 +169,8 @@ typedef struct intr_param_s {
 
 typedef struct node_port_s {
 	uint8_t *virt_addr;
-	uint32_t dram_addr;
-	uint32_t size;
+	unsigned long dram_addr;
+	unsigned long size;
 	struct io_dim dim;
 	struct io_data_fmt data_fmt;
 
@@ -216,7 +216,7 @@ typedef struct {
 typedef struct node_match_s {
 	uint32_t id;
 	char name[AMBAMPS_NODE_NAME_MAX];
-	coproc_type_t node_type;
+	ambamps_coproc_type_t node_type;
 	union {
 		vp_nd_t vp_node;
 		arm_nd_t arm_node;
@@ -232,7 +232,7 @@ typedef struct graph_ctx_s {
 	int node_num;
 	int node_jnt_num;
 	node_match_t node_list[AMBAMPS_NODE_NUM_MAX];
-	graph_node_joint_t node_joint[AMBAMPS_NODE_JOINT_NUM_MAX];
+	ambamps_graph_node_joint_t node_joint[AMBAMPS_NODE_JOINT_NUM_MAX];
 	int exec_index[AMBAMPS_NODE_NUM_MAX];
 
 	uint32_t in_num;

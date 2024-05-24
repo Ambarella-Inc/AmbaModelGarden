@@ -331,7 +331,7 @@ void node_vec_to_map(priv_node_map *p_map, priv_node_vec *p_vec)
 	}
 }
 
-int fill_node_joint(graph_node_joint_t &node_jnt,
+int fill_node_joint(ambamps_graph_node_joint_t &node_jnt,
 		priv_node_t *from_node, priv_node_t *to_node, const uint32_vec *jnt_index)
 {
 	int rval = 0;
@@ -361,11 +361,11 @@ int fill_node_joint(graph_node_joint_t &node_jnt,
 
 		rval = check_string_len_limit(from_name, STR_LEN_MAX(IO_NAME), STR(IO_NAME));
 		if (rval) break;
-		strcpy(node_jnt.from_port_name, from_name.c_str());
+		strncpy(node_jnt.from_port_name, from_name.c_str(), CAVALRY_IO_NAME_MAX - 1);
 
 		rval = check_string_len_limit(to_name, STR_LEN_MAX(IO_NAME), STR(IO_NAME));
 		if (rval) break;
-		strcpy(node_jnt.to_port_name, to_name.c_str());
+		strncpy(node_jnt.to_port_name, to_name.c_str(), CAVALRY_IO_NAME_MAX - 1);
 	} while(0);
 	if (rval) {
 		ambamps_error("node joint from node %s io id %d, to node %s io id %d\n",\
@@ -379,7 +379,7 @@ int fill_node_joint(graph_node_joint_t &node_jnt,
 int get_node_joint_description(node_jnt_vec *p_jnt, priv_node_vec *p_node_list)
 {
 	int rval = 0;
-	graph_node_joint_t node_jnt;
+	ambamps_graph_node_joint_t node_jnt;
 
 	for (const auto& nit: *p_node_list) {
 		priv_node_t cur_node = nit.second;
@@ -440,6 +440,7 @@ int get_node_exec_order(uint32_vec *p_order, node_jnt_vec *p_jnt)
 	return rval;
 }
 
+#if defined(AMBAMPS_CAVALRY_V2)
 int construct_graph(graph_ctx_t *pctx, const char* model_dir)
 {
 	int rval = 0;
@@ -453,7 +454,7 @@ int construct_graph(graph_ctx_t *pctx, const char* model_dir)
 	int node_num = -1, node_id = -1, jnt_num = -1;
 	priv_node_t *node = nullptr;
 	node_match_t *pnet = nullptr;
-	graph_node_joint_t *pjnt = nullptr;
+	ambamps_graph_node_joint_t *pjnt = nullptr;
 
 	memset(pctx, 0, sizeof(graph_ctx_t));
 	node_order.push_back(0);
@@ -524,10 +525,10 @@ int construct_graph(graph_ctx_t *pctx, const char* model_dir)
 			pnet[i].id = node->id;
 			strncpy(pnet[i].name, node->name.c_str(), AMBAMPS_NODE_NAME_MAX - 1);
 			pnet[i].node_type = node->coproc_type;
-			if (node->coproc_type == COPROC_VP) {
+			if (node->coproc_type == AMBAMPS_COPROC_VP) {
 				strncpy(pnet[i].node.vp_node.net_fn, node->compiled_bin.c_str(),
 					AMBAMPS_FILE_PATH_MAX - 1);
-			} else if (node->coproc_type == COPROC_ARM) {
+			} else if (node->coproc_type == AMBAMPS_COPROC_ARM) {
 				std::string ext_attr;
 				strncpy(pnet[i].node.arm_node.lib_fn, node->ext_lib.lib_file.c_str(),
 					AMBAMPS_FILE_PATH_MAX - 1);
@@ -606,4 +607,49 @@ int construct_graph(graph_ctx_t *pctx, const char* model_dir)
 
 	return rval;
 }
+#elif defined(AMBAMPS_CAVALRY_V3)
+int construct_graph(graph_ctx_t *pctx, const char* model_dir)
+{
+	int rval = 0;
+	name_cnt_vec ambapb_list;
+	std::string filename(""), model_name(""), cavalry_bin_name(""), intr_file("");
+	std::size_t pos = std::string::npos;
+	node_match_t *pnet = &pctx->node_list[0];
+
+	pctx->node_num = 1;
+	pctx->exec_index[0] = 0;
+	pctx->node_jnt_num = 0;
+
+	pnet->id = 0;
+	pnet->node_type = AMBAMPS_COPROC_VP;
+
+	do {
+		if(match_file_types_in_dir(model_dir, "onnx", &ambapb_list) <= 0) {
+			ambamps_error("cannot find ambapb file in folder %s\n", model_dir);
+			rval = -1;
+			break;
+		}
+		filename = get_file_filename(ambapb_list.front().first.c_str());
+		pos = filename.find(".");
+		model_name = filename.substr(0,pos);
+		cavalry_bin_name = std::string(model_dir) + "/" + model_name + ".bin";
+
+		strncpy(pnet->name, model_name.c_str(), AMBAMPS_NODE_NAME_MAX - 1);
+		strncpy(pnet->node.vp_node.net_fn, cavalry_bin_name.c_str(), AMBAMPS_FILE_PATH_MAX - 1);
+
+		/* fill in_pair/out_pair in ambamps_graph_io_cfg_CV3x */
+
+		/* model intrinsic param */
+		intr_file = std::string(model_dir) + "/intrinsics/intrinsics.json";
+		if (parse_model_intrinsic_param(&pctx->intr_param, intr_file.c_str())) {
+			ambamps_error("failed to parse intrinsics params from file %s\n", intr_file.c_str());
+			rval = -1;
+			break;
+		}
+	} while(0);
+
+	return rval;
+}
+#endif
+
 
