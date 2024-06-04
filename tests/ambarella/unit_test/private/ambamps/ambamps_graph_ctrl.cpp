@@ -281,8 +281,7 @@ int get_node_by_name(priv_node_t **p_node, priv_node_vec *p_node_list, std::stri
 	return (found? 0 : -1);
 }
 
-int sort_out_body_nodes(struct json_object *root_obj,
-	priv_body_t *p_body, priv_node_vec *p_node_list, const char *json_file)
+int sort_out_body_nodes(priv_body_t *p_body, priv_node_vec *p_node_list, const char *json_file)
 {
 	int rval = 0;
 
@@ -481,7 +480,7 @@ int construct_graph(graph_ctx_t *pctx, const char* model_dir)
 			rval = -1;
 			break;
 		}
-		if(sort_out_body_nodes(root_obj, &graph_body, &graph_node_list, json_file.c_str()) < 0) {
+		if(sort_out_body_nodes(&graph_body, &graph_node_list, json_file.c_str()) < 0) {
 			ambamps_error("failed to sort body and nodes.\n");
 			rval = -1;
 			break;

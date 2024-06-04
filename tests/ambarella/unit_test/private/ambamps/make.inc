@@ -21,10 +21,13 @@
 
 
 ifeq ($(BUILD_AMBARELLA_UNIT_TESTS_AMBAMPS), y)
+ifeq ($(AMBA_CAVALRY_ARCH),cavalry_v2)
 
 LOCAL_PATH	:= $(call my-dir)
 
 ################################################
+
+
 
 include $(CLEAR_VARS)
 LOCAL_TARGET    := test_ambamps
@@ -40,7 +43,8 @@ LOCAL_CFLAGS    := -I$(PREBUILD_OSS_DIR)/opencv/include/opencv4 \
 		-I$(AMB_TOPDIR)/include/cavalry/$(AMBA_CAVALRY_ARCH) \
 		-I$(AMB_TOPDIR)/include/cavalry \
 		-I$(PREBUILD_OSS_DIR)/json-c/include \
-		-I$(LOCAL_PATH)/ambacnn
+		-I$(LOCAL_PATH)/ambacnn \
+		-D AMBAMPS_CAVALRY_V2=1
 
 LOCAL_LIBS      := libnnctrl.so libcavalry_mem.so
 
@@ -65,6 +69,7 @@ $(LOCAL_TARGET): $(LOCAL_MODULE)
 
 $(call add-target-into-build, $(LOCAL_TARGET))
 
+
 #############################################
 
 ifeq ($(BUILD_AMBAMPS_LIVE),y)
@@ -84,7 +89,9 @@ LOCAL_CFLAGS    := -I$(PREBUILD_OSS_DIR)/opencv/include/opencv4 \
 		-I$(AMB_TOPDIR)/include/cavalry \
 		-I$(AMB_TOPDIR)/packages/eazyai/inc \
 		-I$(PREBUILD_OSS_DIR)/json-c/include \
-		-I$(LOCAL_PATH)/ambacnn
+		-I$(LOCAL_PATH)/ambacnn \
+		-D AMBAMPS_CAVALRY_V2=1
+
 
 LOCAL_LIBS      := libnnctrl.so libcavalry_mem.so libeazyai.so
 
@@ -98,6 +105,7 @@ LOCAL_LDFLAGS   := -lpthread -lm -ldl \
 		-Wl,-rpath-link=$(PREBUILD_OSS_DIR)/zlib/usr/lib \
 		-Wl,-rpath-link=$(PREBUILD_OSS_DIR)/tbb/usr/lib \
 		-Wl,-rpath-link=$(FAKEROOT_DIR)/usr/lib
+
 
 include $(BUILD_APP)
 
@@ -113,5 +121,6 @@ endif
 
 ################################################
 
+endif
 endif
 

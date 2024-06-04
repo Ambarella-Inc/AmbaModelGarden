@@ -54,11 +54,13 @@ test_ambamps-ldflags += -lpthread -lm -ldl \
 		-Wl,-rpath-link=$(PREBUILD_OSS_DIR)/tbb/usr/lib \
 		-Wl,-rpath-link=$(FAKEROOT_DIR)/usr/lib
 
+test_ambamps-cflags := -Iambacnn -D AMBAMPS_CAVALRY_V2=1
+
 test_ambamps-srcs = test_ambamps.cpp \
 		ambamps_graph_ctrl.cpp \
 		ambamps_json_parser.cpp
 
-$(call set_flags,CFLAGS,$(test_ambamps-srcs),-Iambacnn)
+$(call set_flags,CFLAGS,$(test_ambamps-srcs),${test_ambamps-cflags})
 $(eval $(call add-bin-build,test_ambamps,$(test_ambamps-srcs),$(test_ambamps-ldflags)))
 
 endif

@@ -561,7 +561,7 @@ static int ambamps_run_one_vp_node(node_match_t *pnet, net_input_cfg *net_input)
 	return rval;
 }
 
-static int ambamps_init_one_arm_node(node_match_t *pnet, graph_ctx_t *pctx)
+static int ambamps_init_one_arm_node(node_match_t *pnet)
 {
 	int rval = 0;
 	amba_cnn_ext_c_extern_node_type_t *type = nullptr;
@@ -859,7 +859,7 @@ static int init_param(int argc, char **argv, init_live_cfg_t *pcfg)
 			pcfg->iav.query_buf_type = atoi(optarg);
 			ambamps_log("Input buffer type = %d\n", pcfg->iav.query_buf_type);
 
-			if (pcfg->iav.query_buf_type < 0 || pcfg->iav.query_buf_type > 3) {
+			if (pcfg->iav.query_buf_type > 3) {
 				ambamps_error("buffer type out of range, should be 0/1/2/3\n");
 				return -1;
 			}
@@ -868,7 +868,7 @@ static int init_param(int argc, char **argv, init_live_cfg_t *pcfg)
 			pcfg->iav.query_buf_id = atoi(optarg);
 			ambamps_log("Input buffer id = %d\n", pcfg->iav.query_buf_id);
 
-			if (pcfg->iav.query_buf_id < 0 || pcfg->iav.query_buf_id > 5) {
+			if (pcfg->iav.query_buf_id > 5) {
 				ambamps_error("buffer id out of range\n");
 				return -1;
 			}
@@ -876,11 +876,6 @@ static int init_param(int argc, char **argv, init_live_cfg_t *pcfg)
 		case 's':
 			pcfg->overlay.stream_id = atoi(optarg);
 			ambamps_log("Display on stream, id = %d\n", pcfg->overlay.stream_id);
-
-			if (pcfg->overlay.stream_id < 0) {
-				ambamps_error("stream id out of range, should >= 0\n");
-				return -1;
-			}
 			break;
 		default:
 			ambamps_error("unknown option found: %c\n", ch);
@@ -1266,7 +1261,7 @@ int main(int argc, char *argv[])
 					break;
 				}
 			} else if (node->node_type == AMBAMPS_COPROC_ARM) {
-				if (ambamps_init_one_arm_node(node, &graph_ctx) < 0) {
+				if (ambamps_init_one_arm_node(node) < 0) {
 					ambamps_error("failed to init one arm node %s\n", node->name);
 					rval = -1;
 					break;
