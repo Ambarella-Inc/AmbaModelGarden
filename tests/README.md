@@ -8,7 +8,7 @@ AmbaMPS unit test source code is stored in github repository. User needs to cont
 
 Command to get source code
 
-	$ git clone https://github.com/Ambarella-Inc/amba-mps.git
+	$ git clone https://github.com/Ambarella-Inc/AmbaModelGarden.git
 
 ## 2. Build with Ambarella Linux SDK
 
@@ -18,7 +18,7 @@ Below steps show how to build AmbaMPS unit test apps in Ambarella Linux SDK.
 
 For SDK 3.x.
 
-    $ cp -r amba-mps/tests/ambarella/unit_test/private/ambamps /path/to/sdk/ambarella/unit_test/private/
+    $ cp -r AmbaModelGarden/tests/ambarella/unit_test/private/ambamps /path/to/sdk/ambarella/unit_test/private/
 
 If versions before SDK 3.0.10 are used, please add one line in file *ambarella/unit_test/private/AmbaConfig* to source the subfolder Ambaconfig in ambamps.
 
@@ -27,7 +27,7 @@ If versions before SDK 3.0.10 are used, please add one line in file *ambarella/u
 
 For SDK 4.x.
 
-	$ cp -r amba-mps/tests/ambarella/* /path/to/user/sdk/ambarella/
+	$ cp -r AmbaModelGarden/tests/ambarella/* /path/to/user/sdk/ambarella/
 
 ### 2.2 Enable AmbaMPS unit test
 
@@ -109,7 +109,7 @@ Live mode inference where continuous video frames are fed as input .
     -s --stream-id        Display on encoding stream, set stream id, [0:1:2...]
 
     Command:
-    *** File amba-mps/tests/evk_run/cv22_vin0_1080p_linear.lua is an lua example to setup video streaming in EVK side.
+    *** File AmbaModelGarden/tests/evk_run/cv22_vin0_1080p_linear.lua is an lua example to setup video streaming in EVK side.
 
     $ test_mempart -m 4 -f
     $ test_mempart -m 4 -s 0x04009000
